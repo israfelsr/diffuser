@@ -4,6 +4,7 @@ import numpy as np
 import torch
 import einops
 import pdb
+import wandb
 
 from .arrays import batch_to_device, to_np, to_device, apply_dict
 from .timer import Timer
@@ -140,6 +141,9 @@ class Trainer(object):
                 print(
                     f'{self.step}: {loss:8.4f} | {infos_str} | t: {timer():8.4f}',
                     flush=True)
+                wandb.log({'loss': loss.item()})
+                for key, val in infos.items():
+                    wandb.log({key: val})
             """
             if self.step == 0 and self.sample_freq:
                 self.render_reference(self.n_reference)
