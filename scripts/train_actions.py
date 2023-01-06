@@ -13,7 +13,7 @@ class Parser(utils.Parser):
 
 args = Parser().parse_args('diffusion')
 args.loader = 'datasets.ActionSequenceDataset'
-wandb.init(project="diffuser/actions")
+wandb.init(project="diffuser")
 
 #-----------------------------------------------------------------------------#
 #---------------------------------- dataset ----------------------------------#
@@ -50,7 +50,7 @@ model_config = utils.Config(
     args.model,
     savepath=(args.savepath, 'model_config.pkl'),
     horizon=args.horizon,
-    transition_dim=observation_dim + action_dim,
+    transition_dim=action_dim,
     cond_dim=observation_dim,
     dim_mults=args.dim_mults,
     attention=args.attention,
