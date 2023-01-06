@@ -12,7 +12,8 @@ class Parser(utils.Parser):
 
 
 args = Parser().parse_args('diffusion')
-wandb.init(project="diffuser")
+args.loader = 'datasets.ActionSequenceDataset'
+wandb.init(project="diffuser/actions")
 
 #-----------------------------------------------------------------------------#
 #---------------------------------- dataset ----------------------------------#
@@ -37,6 +38,11 @@ render_config = utils.Config(
 
 dataset = dataset_config()
 renderer = render_config()
+
+for sample in dataset:
+    print(sample[0].shape)
+    print(sample[1])
+"""
 
 observation_dim = dataset.observation_dim
 action_dim = dataset.action_dim
@@ -120,3 +126,4 @@ n_epochs = int(args.n_train_steps // args.n_steps_per_epoch)
 for i in range(n_epochs):
     print(f'Epoch {i} / {n_epochs} | {args.savepath}')
     trainer.train(n_train_steps=args.n_steps_per_epoch)
+"""
