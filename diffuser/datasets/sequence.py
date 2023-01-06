@@ -9,7 +9,7 @@ from .normalization import DatasetNormalizer
 from .buffer import ReplayBuffer
 
 Batch = namedtuple('Batch', 'trajectories conditions')
-ActionBatch = namedtuple('ActionBatch', 'actions')
+ActionBatch = namedtuple('ActionBatch', 'actions init_condition')
 ValueBatch = namedtuple('ValueBatch', 'trajectories conditions values')
 
 
@@ -43,7 +43,7 @@ class SequenceDataset(torch.utils.data.Dataset):
             fields, normalizer, path_lengths=fields['path_lengths'])
         self.indices = self.make_indices(fields.path_lengths, horizon)
 
-        self.observation_dim = 0
+        self.observation_dim = fields.observations.shape[-1]
         self.action_dim = fields.actions.shape[-1]
         self.fields = fields
         self.n_episodes = fields.n_episodes
