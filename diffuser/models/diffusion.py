@@ -63,6 +63,7 @@ class GaussianDiffusion(nn.Module):
         self.horizon = horizon
         self.observation_dim = observation_dim
         self.action_dim = action_dim
+        # Modification to train only on actions
         if only_actions:
             self.transition_dim = action_dim
         else:
@@ -250,9 +251,10 @@ class GaussianDiffusion(nn.Module):
         noise = torch.randn_like(x_start)
 
         x_noisy = self.q_sample(x_start=x_start, t=t, noise=noise)
-        x_recon = self.model(x_noisy, cond, t)
         if not self.only_actions:
             x_noisy = apply_conditioning(x_noisy, cond, self.action_dim)
+        x_recon = self.model(x_noisy, cond, t)
+        if not self.only_actions:
             x_recon = apply_conditioning(x_recon, cond, self.action_dim)
 
         assert noise.shape == x_recon.shape

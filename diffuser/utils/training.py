@@ -141,6 +141,8 @@ class Trainer(object):
                 print(
                     f'{self.step}: {loss:8.4f} | {infos_str} | t: {timer():8.4f}',
                     flush=True)
+
+                # Log into wandb
                 wandb.log({'loss': loss.item()})
                 for key, val in infos.items():
                     wandb.log({key: val})

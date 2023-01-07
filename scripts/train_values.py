@@ -1,17 +1,19 @@
 import diffuser.utils as utils
 import pdb
-
+import wandb
 
 #-----------------------------------------------------------------------------#
 #----------------------------------- setup -----------------------------------#
 #-----------------------------------------------------------------------------#
 
+
 class Parser(utils.Parser):
     dataset: str = 'walker2d-medium-replay-v2'
     config: str = 'config.locomotion'
 
-args = Parser().parse_args('values')
 
+args = Parser().parse_args('values')
+wandb.init(project="diffuser")
 
 #-----------------------------------------------------------------------------#
 #---------------------------------- dataset ----------------------------------#
