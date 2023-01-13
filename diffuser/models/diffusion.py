@@ -12,7 +12,8 @@ from .helpers import (
     Losses,
 )
 
-Sample = namedtuple('Sample', 'trajectories values chains')
+#Sample = namedtuple('Sample', 'trajectories values chains')
+Sample = namedtuple('Sample', 'actions values chains')
 
 
 @torch.no_grad()
@@ -288,6 +289,8 @@ class ValueDiffusion(GaussianDiffusion):
 
         loss, info = self.loss_fn(pred, target)
         return loss, info
+        # here change so it has the same dimension as the input image.
+        # I don't know why I'm able to train. Check the inputs.
 
     def forward(self, x, cond, t):
         return self.model(x, cond, t)

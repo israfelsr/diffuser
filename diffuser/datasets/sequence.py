@@ -9,7 +9,7 @@ from .normalization import DatasetNormalizer
 from .buffer import ReplayBuffer
 
 Batch = namedtuple('Batch', 'trajectories conditions')
-ActionBatch = namedtuple('ActionBatch', 'trajectories conditions')
+ActionBatch = namedtuple('ActionBatch', 'actions states')
 ValueBatch = namedtuple('ValueBatch', 'trajectories conditions values')
 
 

@@ -2,18 +2,20 @@ import pdb
 
 import diffuser.sampling as sampling
 import diffuser.utils as utils
-
+import wandb
 
 #-----------------------------------------------------------------------------#
 #----------------------------------- setup -----------------------------------#
 #-----------------------------------------------------------------------------#
 
+
 class Parser(utils.Parser):
     dataset: str = 'walker2d-medium-replay-v2'
     config: str = 'config.locomotion'
 
-args = Parser().parse_args('plan')
 
+args = Parser().parse_args('plan')
+wandb.init(project="diffuser")
 
 #-----------------------------------------------------------------------------#
 #---------------------------------- loading ----------------------------------#
@@ -21,12 +23,18 @@ args = Parser().parse_args('plan')
 
 ## load diffusion model and value function from disk
 diffusion_experiment = utils.load_diffusion(
-    args.loadbase, args.dataset, args.diffusion_loadpath,
-    epoch=args.diffusion_epoch, seed=args.seed,
+    args.loadbase,
+    args.dataset,
+    args.diffusion_loadpath,
+    epoch=args.diffusion_epoch,
+    seed=args.seed,
 )
 value_experiment = utils.load_diffusion(
-    args.loadbase, args.dataset, args.value_loadpath,
-    epoch=args.value_epoch, seed=args.seed,
+    args.loadbase,
+    args.dataset,
+    args.value_loadpath,
+    epoch=args.value_epoch,
+    seed=args.seed,
 )
 
 ## ensure that the diffusion model and value function are compatible with each other
@@ -68,7 +76,6 @@ policy_config = utils.Config(
 logger = logger_config()
 policy = policy_config()
 
-
 #-----------------------------------------------------------------------------#
 #--------------------------------- main loop ---------------------------------#
 #-----------------------------------------------------------------------------#
@@ -89,7 +96,9 @@ for t in range(args.max_episode_length):
 
     ## format current observation for conditioning
     conditions = {0: observation}
-    action, samples = policy(conditions, batch_size=args.batch_size, verbose=args.verbose)
+    action, samples = policy(conditions,
+                             batch_size=args.batch_size,
+                             verbose=args.verbose)
 
     ## execute action in environment
     next_observation, reward, terminal, _ = env.step(action)
@@ -115,4 +124,5 @@ for t in range(args.max_episode_length):
     observation = next_observation
 
 ## write results to json file at `args.savepath`
-logger.finish(t, score, total_reward, terminal, diffusion_experiment, value_experiment)
+logger.finish(t, score, total_reward, terminal, diffusion_experiment,
+              value_experiment)
