@@ -17,7 +17,12 @@ from .helpers import (
 
 class ResidualTemporalBlock(nn.Module):
 
-    def __init__(self, inp_channels, out_channels, embed_dim, horizon, kernel_size=5):
+    def __init__(self,
+                 inp_channels,
+                 out_channels,
+                 embed_dim,
+                 horizon,
+                 kernel_size=5):
         super().__init__()
 
         self.blocks = nn.ModuleList([
@@ -49,17 +54,17 @@ class ResidualTemporalBlock(nn.Module):
 class TemporalUnet(nn.Module):
 
     def __init__(
-        self,
-        horizon,
-        transition_dim,
-        cond_dim,
-        dim=32,
-        dim_mults=(1, 2, 4, 8),
-        attention=False,
+            self,
+            horizon,
+            transition_dim,
+            cond_dim,
+            dim=32,
+            dim_mults=(1, 2, 4, 8),
+            attention=False,
     ):
         super().__init__()
-
-        dims = [transition_dim, *map(lambda m: dim * m, dim_mults)]
+        # TODO: check if ok
+        dims = [transition_dim + cond_dim, *map(lambda m: dim * m, dim_mults)]
         in_out = list(zip(dims[:-1], dims[1:]))
         print(f'[ models/temporal ] Channel dimensions: {in_out}')
 
@@ -70,7 +75,7 @@ class TemporalUnet(nn.Module):
             nn.Mish(),
             nn.Linear(dim * 4, dim),
         )
-
+        self.cond_dim = cond_dim
         self.downs = nn.ModuleList([])
         self.ups = nn.ModuleList([])
         num_resolutions = len(in_out)
@@ -79,30 +84,54 @@ class TemporalUnet(nn.Module):
         for ind, (dim_in, dim_out) in enumerate(in_out):
             is_last = ind >= (num_resolutions - 1)
 
-            self.downs.append(nn.ModuleList([
-                ResidualTemporalBlock(dim_in, dim_out, embed_dim=time_dim, horizon=horizon),
-                ResidualTemporalBlock(dim_out, dim_out, embed_dim=time_dim, horizon=horizon),
-                Residual(PreNorm(dim_out, LinearAttention(dim_out))) if attention else nn.Identity(),
-                Downsample1d(dim_out) if not is_last else nn.Identity()
-            ]))
+            self.downs.append(
+                nn.ModuleList([
+                    ResidualTemporalBlock(dim_in,
+                                          dim_out,
+                                          embed_dim=time_dim,
+                                          horizon=horizon),
+                    ResidualTemporalBlock(dim_out,
+                                          dim_out,
+                                          embed_dim=time_dim,
+                                          horizon=horizon),
+                    Residual(PreNorm(dim_out, LinearAttention(dim_out)))
+                    if attention else nn.Identity(),
+                    Downsample1d(dim_out) if not is_last else nn.Identity()
+                ]))
 
             if not is_last:
                 horizon = horizon // 2
 
         mid_dim = dims[-1]
-        self.mid_block1 = ResidualTemporalBlock(mid_dim, mid_dim, embed_dim=time_dim, horizon=horizon)
-        self.mid_attn = Residual(PreNorm(mid_dim, LinearAttention(mid_dim))) if attention else nn.Identity()
-        self.mid_block2 = ResidualTemporalBlock(mid_dim, mid_dim, embed_dim=time_dim, horizon=horizon)
+        self.mid_block1 = ResidualTemporalBlock(mid_dim,
+                                                mid_dim,
+                                                embed_dim=time_dim,
+                                                horizon=horizon)
+        self.mid_attn = Residual(
+            PreNorm(mid_dim,
+                    LinearAttention(mid_dim))) if attention else nn.Identity()
+        self.mid_block2 = ResidualTemporalBlock(mid_dim,
+                                                mid_dim,
+                                                embed_dim=time_dim,
+                                                horizon=horizon)
 
         for ind, (dim_in, dim_out) in enumerate(reversed(in_out[1:])):
             is_last = ind >= (num_resolutions - 1)
 
-            self.ups.append(nn.ModuleList([
-                ResidualTemporalBlock(dim_out * 2, dim_in, embed_dim=time_dim, horizon=horizon),
-                ResidualTemporalBlock(dim_in, dim_in, embed_dim=time_dim, horizon=horizon),
-                Residual(PreNorm(dim_in, LinearAttention(dim_in))) if attention else nn.Identity(),
-                Upsample1d(dim_in) if not is_last else nn.Identity()
-            ]))
+            self.ups.append(
+                nn.ModuleList([
+                    ResidualTemporalBlock(dim_out * 2,
+                                          dim_in,
+                                          embed_dim=time_dim,
+                                          horizon=horizon),
+                    ResidualTemporalBlock(dim_in,
+                                          dim_in,
+                                          embed_dim=time_dim,
+                                          horizon=horizon),
+                    Residual(PreNorm(dim_in, LinearAttention(dim_in)))
+                    if attention else nn.Identity(),
+                    Upsample1d(dim_in) if not is_last else nn.Identity()
+                ]))
 
             if not is_last:
                 horizon = horizon * 2
@@ -149,13 +178,13 @@ class TemporalUnet(nn.Module):
 class ValueFunction(nn.Module):
 
     def __init__(
-        self,
-        horizon,
-        transition_dim,
-        cond_dim,
-        dim=32,
-        dim_mults=(1, 2, 4, 8),
-        out_dim=1,
+            self,
+            horizon,
+            transition_dim,
+            cond_dim,
+            dim=32,
+            dim_mults=(1, 2, 4, 8),
+            out_dim=1,
     ):
         super().__init__()
 
@@ -177,11 +206,20 @@ class ValueFunction(nn.Module):
         for ind, (dim_in, dim_out) in enumerate(in_out):
             is_last = ind >= (num_resolutions - 1)
 
-            self.blocks.append(nn.ModuleList([
-                ResidualTemporalBlock(dim_in, dim_out, kernel_size=5, embed_dim=time_dim, horizon=horizon),
-                ResidualTemporalBlock(dim_out, dim_out, kernel_size=5, embed_dim=time_dim, horizon=horizon),
-                Downsample1d(dim_out)
-            ]))
+            self.blocks.append(
+                nn.ModuleList([
+                    ResidualTemporalBlock(dim_in,
+                                          dim_out,
+                                          kernel_size=5,
+                                          embed_dim=time_dim,
+                                          horizon=horizon),
+                    ResidualTemporalBlock(dim_out,
+                                          dim_out,
+                                          kernel_size=5,
+                                          embed_dim=time_dim,
+                                          horizon=horizon),
+                    Downsample1d(dim_out)
+                ]))
 
             if not is_last:
                 horizon = horizon // 2
@@ -190,11 +228,19 @@ class ValueFunction(nn.Module):
         mid_dim_2 = mid_dim // 2
         mid_dim_3 = mid_dim // 4
         ##
-        self.mid_block1 = ResidualTemporalBlock(mid_dim, mid_dim_2, kernel_size=5, embed_dim=time_dim, horizon=horizon)
+        self.mid_block1 = ResidualTemporalBlock(mid_dim,
+                                                mid_dim_2,
+                                                kernel_size=5,
+                                                embed_dim=time_dim,
+                                                horizon=horizon)
         self.mid_down1 = Downsample1d(mid_dim_2)
         horizon = horizon // 2
         ##
-        self.mid_block2 = ResidualTemporalBlock(mid_dim_2, mid_dim_3, kernel_size=5, embed_dim=time_dim, horizon=horizon)
+        self.mid_block2 = ResidualTemporalBlock(mid_dim_2,
+                                                mid_dim_3,
+                                                kernel_size=5,
+                                                embed_dim=time_dim,
+                                                horizon=horizon)
         self.mid_down2 = Downsample1d(mid_dim_3)
         horizon = horizon // 2
         ##
