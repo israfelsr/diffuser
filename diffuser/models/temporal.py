@@ -64,7 +64,7 @@ class TemporalUnet(nn.Module):
     ):
         super().__init__()
         # TODO: check if ok
-        dims = [transition_dim + cond_dim, *map(lambda m: dim * m, dim_mults)]
+        dims = [transition_dim, *map(lambda m: dim * m, dim_mults)]
         in_out = list(zip(dims[:-1], dims[1:]))
         print(f'[ models/temporal ] Channel dimensions: {in_out}')
 
